@@ -442,7 +442,7 @@ const SPRITE_MAP = {
   mewtwo:'Mewtwo',mew:'Mew'
 };
 
-const GIF_BASE      = 'https://raw.githubusercontent.com/Nackha1/Hd-sprites/refs/heads/master/';
+const GIF_BASE      = 'https://cdn.jsdelivr.net/gh/Nackha1/Hd-sprites@master/';
 const FALLBACK_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 function gifUrl(name)    { return GIF_BASE      + (SPRITE_MAP[name] || capitalize(name)) + '.gif'; }
 function fallbackUrl(id) { return FALLBACK_BASE + id + '.png'; }
@@ -721,3 +721,4 @@ function displayName(name) {
 </script>
 </body>
 </html>
+
