@@ -30,7 +30,7 @@ function stopResultAudio() {
 // ── Show Results + Auto Submit ───────────────────────────────────
 function showResults() {
   stopTimer();
-  const pct=answeredCount===0?0:Math.round(correctCount/answeredCount*100);
+  const pct = answeredCount===0 ? 0 : Math.round(correctCount/answeredCount*100);
   const tiers=[
     [100,'🏆','Perfect score! True Pokémon Master!'],
     [80, '🌟','Excellent! Almost a Pokémon Master!'],
@@ -39,27 +39,33 @@ function showResults() {
     [0,  '😢','Time to revisit your Pokédex!']
   ];
   const [,emoji,msg]=tiers.find(([t])=>pct>=t);
-  document.getElementById('result-emoji').textContent      =emoji;
-  document.getElementById('result-player-name').textContent=playerName;
-  document.getElementById('result-pct').textContent        =pct+'%';
-  document.getElementById('result-score-sub').textContent  =`${correctCount} / ${answeredCount} correct`;
-  document.getElementById('result-time').textContent       =`⏱ ${getTimeString()}`;
-  document.getElementById('result-msg').textContent        =msg;
-  document.getElementById('lb-submit-status').textContent  ='Saving score…';
+  document.getElementById('result-emoji').textContent      = emoji;
+  document.getElementById('result-player-name').textContent= playerName;
+  document.getElementById('result-pct').textContent        = pct+'%';
+  document.getElementById('result-score-sub').textContent  = `${correctCount} / ${answeredCount} correct`;
+  document.getElementById('result-time').textContent       = `⏱ ${getTimeString()}`;
+  document.getElementById('result-msg').textContent        = msg;
+  document.getElementById('lb-submit-status').textContent  = 'Saving score…';
   showScreen('result-screen');
-  setTimeout(()=>{ celebrationConfetti(pct); if(pct>=80) playFanfare(); },300);
+
+  setTimeout(()=>{ celebrationConfetti(pct); if(pct>=80) playFanfare(); }, 300);
+
+  // ── 100% Mew easter egg ───────────────────────────────────────
+  if (pct === 100) setTimeout(triggerMewEasterEgg, 800);
+
   if(soundOn){
     stopResultAudio();
-    const soundFile=pct===100?'champion-sound':pct>=50?'win-sound':'lose-sound';
-    resultAudio=new Audio(`sounds/${soundFile}.mp3`);
+    const soundFile = pct===100?'champion-sound': pct>=50?'win-sound':'lose-sound';
+    resultAudio = new Audio(`sounds/${soundFile}.mp3`);
     resultAudio.play().catch(()=>{});
   }
+
   submitScore(pct);
 }
 
 async function submitScore(pct) {
-  const statusEl=document.getElementById('lb-submit-status');
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+  const statusEl = document.getElementById('lb-submit-status');
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
     statusEl.textContent=''; return;
   }
   const quizNames={whos:"Who's That Pokémon?",identify:'Identify the Pokémon',evo:'Spot the Evolution'};
@@ -70,19 +76,14 @@ async function submitScore(pct) {
     accuracy:   pct+'%',
     time:       getTimeString(),
     difficulty: difficulty.charAt(0).toUpperCase()+difficulty.slice(1),
-    date: (()=>{
-      const now=new Date();
-      const ist=new Date(now.getTime()+(5.5*60*60*1000));
-      const dd=String(ist.getUTCDate()).padStart(2,'0');
-      const mm=String(ist.getUTCMonth()+1).padStart(2,'0');
-      const yyyy=ist.getUTCFullYear();
-      return `${dd}/${mm}/${yyyy}`;
+    date:(()=>{
+      const now=new Date(), ist=new Date(now.getTime()+(5.5*60*60*1000));
+      return `${String(ist.getUTCDate()).padStart(2,'0')}/${String(ist.getUTCMonth()+1).padStart(2,'0')}/${ist.getUTCFullYear()}`;
     })()
   };
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method:'POST',
-      mode:'no-cors',
+    await fetch(APPS_SCRIPT_URL,{
+      method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload)
     });
@@ -90,7 +91,7 @@ async function submitScore(pct) {
   } catch(e) {
     statusEl.textContent='⚠️ Could not save score.';
   }
-  setTimeout(()=>{ statusEl.textContent=''; },3000);
+  setTimeout(()=>{ statusEl.textContent=''; }, 3000);
 }
 
 // ── Leaderboard Display ──────────────────────────────────────────
@@ -98,17 +99,25 @@ let lbCurrentTab='whos', lbCurrentFilter='all', lbAllData=[];
 
 function showLeaderboard() {
   playClick();
-  lbCurrentTab=quizType;
-  lbCurrentFilter=difficulty;
-  document.querySelector('.lb-tabs').style.display='none';
-  document.querySelector('.lb-filters').style.display='none';
+  lbCurrentTab   = quizType;
+  lbCurrentFilter= difficulty;
+
+  // Sync tab UI to current quiz type
+  const tabMap={whos:0,identify:1,evo:2};
+  document.querySelectorAll('.lb-tab').forEach((t,i)=>
+    t.classList.toggle('active', i===tabMap[lbCurrentTab]));
+
+  // Sync filter UI to current difficulty
+  const filterMap={all:0,easy:1,hard:2};
+  document.querySelectorAll('.lb-filter').forEach((f,i)=>
+    f.classList.toggle('active', i===filterMap[lbCurrentFilter]));
+
   showScreen('leaderboard-screen');
   fetchLeaderboard();
 }
+
 function closeLeaderboard() {
   playClick();
-  document.querySelector('.lb-tabs').style.display='';
-  document.querySelector('.lb-filters').style.display='';
   showScreen('result-screen');
 }
 function switchLbTab(tab) {
@@ -129,18 +138,47 @@ function switchLbFilter(filter) {
 }
 
 async function fetchLeaderboard() {
-  const wrap=document.getElementById('lb-table-wrap');
-  wrap.innerHTML='<div class="lb-loading">Loading scores…</div>';
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
-    wrap.innerHTML='<div class="lb-empty">Leaderboard not configured yet.<br/>Add your Apps Script URL to leaderboard.js</div>';
+  const wrap = document.getElementById('lb-table-wrap');
+
+  // ── Show loading message immediately, visibly ─────────────────
+  wrap.innerHTML = '<div class="lb-loading" style="padding:32px;text-align:center;font-size:15px;color:#555;">⏳ Loading scores…</div>';
+
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    wrap.innerHTML='<div class="lb-empty">Leaderboard not configured yet.</div>';
     return;
   }
+
+  // ── Timeout guard — show error if fetch hangs > 8s ────────────
+  const controller = new AbortController();
+  const timeout = setTimeout(()=> controller.abort(), 8000);
+
   try {
-    const res=await fetch(`${APPS_SCRIPT_URL}?action=get`);
-    lbAllData=await res.json();
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=get`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const text = await res.text();
+
+    // Apps Script sometimes wraps JSON in a callback — strip it
+    let json = text.trim();
+    if (json.startsWith('/*')) json = json.replace(/^\/\*.*?\*\//s,'').trim();
+
+    lbAllData = JSON.parse(json);
+
+    if (!Array.isArray(lbAllData)) throw new Error('Unexpected response format');
+
     renderLeaderboardTable();
+
   } catch(e) {
-    wrap.innerHTML='<div class="lb-empty">⚠️ Could not load scores.<br/>Check your connection.</div>';
+    clearTimeout(timeout);
+    if (e.name === 'AbortError') {
+      wrap.innerHTML='<div class="lb-empty">⏱ Request timed out.<br/>Check your connection and try again.</div>';
+    } else {
+      wrap.innerHTML=`<div class="lb-empty">⚠️ Could not load scores.<br/><small style="color:#aaa">${e.message}</small></div>`;
+    }
   }
 }
 
