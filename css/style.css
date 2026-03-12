@@ -344,7 +344,12 @@ input[type="text"]:focus { border-color: #3D7DCA; }
 }
 .lb-filter.active { background: #3D7DCA; border-color: #3D7DCA; color: #fff; }
 .lb-filter:hover:not(.active) { border-color: #3D7DCA; color: #3D7DCA; background: #eef4fc; }
-.lb-table-wrap { max-height: 400px; overflow-y: auto; }
+.lb-table-wrap {
+  max-height: 55vh;
+  overflow-y: auto;
+  overflow-x: auto;
+  width: 100%;
+}
 .lb-table-wrap::-webkit-scrollbar { width: 6px; }
 .lb-table-wrap::-webkit-scrollbar-track { background: #f0f0f0; border-radius: 99px; }
 .lb-table-wrap::-webkit-scrollbar-thumb { background: #3D7DCA; border-radius: 99px; }
