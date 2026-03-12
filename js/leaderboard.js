@@ -27,7 +27,7 @@ function stopResultAudio() {
   if(resultAudio){ resultAudio.pause(); resultAudio.currentTime=0; resultAudio=null; }
 }
 
-// ── Show Results + Auto Submit ───────────────────────────────────
+// ── Show Results ─────────────────────────────────────────────────
 function showResults() {
   stopTimer();
   const pct = answeredCount===0 ? 0 : Math.round(correctCount/answeredCount*100);
@@ -63,11 +63,9 @@ function showResults() {
   submitScore(pct);
 }
 
+// ── Submit Score ─────────────────────────────────────────────────
 async function submitScore(pct) {
   const statusEl = document.getElementById('lb-submit-status');
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
-    statusEl.textContent=''; return;
-  }
   const quizNames={whos:"Who's That Pokémon?",identify:'Identify the Pokémon',evo:'Spot the Evolution'};
   const payload={
     quiz:       quizNames[quizType],
@@ -94,23 +92,23 @@ async function submitScore(pct) {
   setTimeout(()=>{ statusEl.textContent=''; }, 3000);
 }
 
-// ── Leaderboard Display ──────────────────────────────────────────
-let lbCurrentTab='whos', lbCurrentFilter='all', lbAllData=[];
+// ── Leaderboard ──────────────────────────────────────────────────
+let lbAllData=[];
 
 function showLeaderboard() {
   playClick();
-  lbCurrentTab   = quizType;
-  lbCurrentFilter= difficulty;
 
-  // Sync tab UI to current quiz type
-  const tabMap={whos:0,identify:1,evo:2};
-  document.querySelectorAll('.lb-tab').forEach((t,i)=>
-    t.classList.toggle('active', i===tabMap[lbCurrentTab]));
+  // ── Lock to current quiz + difficulty — no tabs, no filters ──
+  const quizLabels={
+    whos:"Who's That Pokémon?",
+    identify:'Identify the Pokémon',
+    evo:'Spot the Evolution'
+  };
+  const diffLabel = difficulty.charAt(0).toUpperCase()+difficulty.slice(1);
 
-  // Sync filter UI to current difficulty
-  const filterMap={all:0,easy:1,hard:2};
-  document.querySelectorAll('.lb-filter').forEach((f,i)=>
-    f.classList.toggle('active', i===filterMap[lbCurrentFilter]));
+  // Update heading so user knows what they're viewing
+  document.getElementById('lb-title').textContent =
+    `🏆 ${quizLabels[quizType]} — ${diffLabel}`;
 
   showScreen('leaderboard-screen');
   fetchLeaderboard();
@@ -120,35 +118,22 @@ function closeLeaderboard() {
   playClick();
   showScreen('result-screen');
 }
-function switchLbTab(tab) {
-  playClick();
-  lbCurrentTab=tab;
-  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
-  const tabMap={whos:0,identify:1,evo:2};
-  document.querySelectorAll('.lb-tab')[tabMap[tab]].classList.add('active');
-  renderLeaderboardTable();
-}
-function switchLbFilter(filter) {
-  playClick();
-  lbCurrentFilter=filter;
-  document.querySelectorAll('.lb-filter').forEach(f=>f.classList.remove('active'));
-  const filterMap={all:0,easy:1,hard:2};
-  document.querySelectorAll('.lb-filter')[filterMap[filter]].classList.add('active');
-  renderLeaderboardTable();
-}
 
+// ── Fetch ─────────────────────────────────────────────────────────
 async function fetchLeaderboard() {
   const wrap = document.getElementById('lb-table-wrap');
 
-  // ── Show loading message immediately, visibly ─────────────────
-  wrap.innerHTML = '<div class="lb-loading" style="padding:32px;text-align:center;font-size:15px;color:#555;">⏳ Loading scores…</div>';
+  // Force the loading state with a completely standalone element —
+  // bypasses any CSS class that might hide .lb-loading
+  wrap.innerHTML = '';
+  const loadEl = document.createElement('p');
+  loadEl.textContent = '⏳ Loading scores…';
+  loadEl.setAttribute('style',
+    'padding:40px 20px; text-align:center; font-size:15px; ' +
+    'color:#555; font-family:sans-serif; display:block !important; visibility:visible !important;'
+  );
+  wrap.appendChild(loadEl);
 
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
-    wrap.innerHTML='<div class="lb-empty">Leaderboard not configured yet.</div>';
-    return;
-  }
-
-  // ── Timeout guard — show error if fetch hangs > 8s ────────────
   const controller = new AbortController();
   const timeout = setTimeout(()=> controller.abort(), 8000);
 
@@ -157,69 +142,83 @@ async function fetchLeaderboard() {
       signal: controller.signal
     });
     clearTimeout(timeout);
-
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const text = await res.text();
-
-    // Apps Script sometimes wraps JSON in a callback — strip it
-    let json = text.trim();
+    let json = (await res.text()).trim();
+    // Strip any JSONP wrapper Apps Script might add
     if (json.startsWith('/*')) json = json.replace(/^\/\*.*?\*\//s,'').trim();
 
     lbAllData = JSON.parse(json);
-
-    if (!Array.isArray(lbAllData)) throw new Error('Unexpected response format');
+    if (!Array.isArray(lbAllData)) throw new Error('Unexpected data format');
 
     renderLeaderboardTable();
 
   } catch(e) {
     clearTimeout(timeout);
-    if (e.name === 'AbortError') {
-      wrap.innerHTML='<div class="lb-empty">⏱ Request timed out.<br/>Check your connection and try again.</div>';
-    } else {
-      wrap.innerHTML=`<div class="lb-empty">⚠️ Could not load scores.<br/><small style="color:#aaa">${e.message}</small></div>`;
-    }
+    wrap.innerHTML = '';
+    const errEl = document.createElement('p');
+    errEl.setAttribute('style',
+      'padding:40px 20px; text-align:center; font-size:14px; ' +
+      'color:#888; font-family:sans-serif;'
+    );
+    errEl.innerHTML = e.name==='AbortError'
+      ? '⏱ Request timed out.<br/>Check your connection.'
+      : `⚠️ Could not load scores.<br/><small>${e.message}</small>`;
+    wrap.appendChild(errEl);
   }
 }
 
+// ── Render ────────────────────────────────────────────────────────
 function renderLeaderboardTable() {
-  const wrap=document.getElementById('lb-table-wrap');
+  const wrap = document.getElementById('lb-table-wrap');
   const quizNames={whos:"Who's That Pokémon?",identify:'Identify the Pokémon',evo:'Spot the Evolution'};
-  let data=lbAllData.filter(r=>r.quiz===quizNames[lbCurrentTab]);
-  if(lbCurrentFilter!=='all'){
-    data=data.filter(r=>r.difficulty&&r.difficulty.toLowerCase()===lbCurrentFilter);
-  }
+
+  // Filter to current quiz + difficulty only
+  let data = lbAllData.filter(r =>
+    r.quiz === quizNames[quizType] &&
+    r.difficulty && r.difficulty.toLowerCase() === difficulty.toLowerCase()
+  );
+
+  // Sort by accuracy desc, then time asc
   data.sort((a,b)=>{
     const pa=parseInt(a.accuracy)||0, pb=parseInt(b.accuracy)||0;
     if(pb!==pa) return pb-pa;
     return timeToSeconds(a.time)-timeToSeconds(b.time);
   });
-  data=data.slice(0,50);
+  data = data.slice(0,50);
+
   if(data.length===0){
-    wrap.innerHTML='<div class="lb-empty">No scores yet for this quiz.<br/>Be the first! 🏆</div>';
+    wrap.innerHTML='';
+    const empty = document.createElement('p');
+    empty.setAttribute('style',
+      'padding:40px 20px; text-align:center; font-size:14px; color:#888; font-family:sans-serif;'
+    );
+    empty.innerHTML = 'No scores yet for this quiz.<br/>Be the first! 🏆';
+    wrap.appendChild(empty);
     return;
   }
+
   const medals=['🥇','🥈','🥉'];
   const rows=data.map((r,i)=>{
-    const isYou=r.name===playerName;
-    const rankClass=i<3?`lb-rank lb-rank-${i+1}`:'lb-rank';
-    const rank=i<3?medals[i]:`#${i+1}`;
+    const isYou = r.name===playerName;
+    const rank  = i<3 ? medals[i] : `#${i+1}`;
+    const rankClass = i<3 ? `lb-rank lb-rank-${i+1}` : 'lb-rank';
     return `<tr class="${isYou?'lb-you':''}">
       <td><span class="${rankClass}">${rank}</span></td>
       <td>${escHtml(r.name)}${isYou?' 👈':''}</td>
       <td>${escHtml(r.score)}</td>
       <td>${escHtml(r.accuracy)}</td>
       <td>${escHtml(r.time)}</td>
-      <td>${escHtml(r.difficulty||'—')}</td>
       <td>${escHtml(r.date||'—')}</td>
     </tr>`;
   }).join('');
+
   wrap.innerHTML=`
     <table class="lb-table">
       <thead>
         <tr>
           <th>RANK</th><th>NAME</th><th>SCORE</th>
-          <th>ACCURACY</th><th>TIME</th><th>DIFF</th><th>DATE</th>
+          <th>ACCURACY</th><th>TIME</th><th>DATE</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -228,9 +227,8 @@ function renderLeaderboardTable() {
 
 function timeToSeconds(timeStr) {
   if(!timeStr) return 99999;
-  const m=timeStr.match(/(\d+)m\s*(\d+)s/);
-  if(m) return parseInt(m[1])*60+parseInt(m[2]);
-  return 99999;
+  const m = timeStr.match(/(\d+)m\s*(\d+)s/);
+  return m ? parseInt(m[1])*60+parseInt(m[2]) : 99999;
 }
 function escHtml(str) {
   if(!str) return '—';
