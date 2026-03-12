@@ -54,7 +54,7 @@ function fallbackUrl(id) { return FALLBACK_BASE+id+'.png'; }
 let quizType=null, difficulty=null, quizMode='quick', playerName='';
 let allPokemon=[], questions=[], currentQ=0, correctCount=0, answeredCount=0;
 let hintsRevealed=0, currentPokemonData=null;
-let autoNextTimer=null; // ── auto-next timer handle
+let autoNextTimer=null;
 const QUICK_COUNT=20;
 
 // ── Swipe ────────────────────────────────────────────────────────
@@ -248,12 +248,15 @@ function renderWhosQuestion(q) {
   q.options.forEach(opt=>{
     const btn=document.createElement('button');
     btn.className='opt-btn'; btn.textContent=displayName(opt.name);
+    btn.style.fontFamily="'Flexo', sans-serif";
     btn.onclick=()=>checkAnswer('whos',opt.name,q.correct.name,btn);
     document.getElementById('options-grid').appendChild(btn);
   });
 }
 function renderIdentifyQuestion(q) {
-  document.getElementById('identify-name').textContent=displayName(q.correct.name);
+  const nameEl=document.getElementById('identify-name');
+  nameEl.textContent=displayName(q.correct.name);
+  nameEl.style.fontFamily="'Flexo', sans-serif";
   const grid=document.getElementById('img-options-grid'); grid.innerHTML='';
   q.options.forEach(opt=>{
     const btn=document.createElement('button');
@@ -280,6 +283,7 @@ function renderEvoQuestion(evoQ) {
   const arrow=document.createElement('div'); arrow.className='evo-arrow';
   const aLine=document.createElement('div'); aLine.className='evo-arrow-line'; aLine.textContent='→';
   const aLbl=document.createElement('div'); aLbl.className='evo-arrow-label';
+  aLbl.style.fontFamily="'Flexo', sans-serif";
   aLbl.textContent=evoQ.direction==='next'?'evolves into?':'evolved from?';
   arrow.appendChild(aLine); arrow.appendChild(aLbl);
   const qWrap=document.createElement('div'); qWrap.className='evo-qmark-wrap';
@@ -294,6 +298,7 @@ function renderEvoQuestion(evoQ) {
       btn.className='evo-opt-btn none-tile'; btn.dataset.isNone='true';
       const icon=document.createElement('div'); icon.className='none-icon'; icon.textContent='✖️';
       const lbl=document.createElement('div'); lbl.className='none-label';
+      lbl.style.fontFamily="'Flexo', sans-serif";
       lbl.textContent=evoQ.direction==='next'?'Does not evolve':'No pre-evolution';
       btn.appendChild(icon); btn.appendChild(lbl);
       btn.onclick=()=>checkEvoAnswer(btn,evoQ,true);
@@ -305,6 +310,7 @@ function renderEvoQuestion(evoQ) {
       img2.onerror=()=>{ img2.onerror=null; img2.src=fallbackUrl(opt.id); };
       img2.src=gifUrl(opt.name);
       const cap=document.createElement('div'); cap.className='evo-caption';
+      cap.style.fontFamily="'Flexo', sans-serif";
       cap.textContent=difficulty==='hard'?'???':displayName(opt.name);
       btn.appendChild(spin); btn.appendChild(img2); btn.appendChild(cap);
       btn.onclick=()=>checkEvoAnswer(btn,evoQ,false,opt.name);
@@ -319,7 +325,6 @@ function clearAutoNext() {
   const nxt=document.getElementById('next-btn');
   if(nxt) nxt.textContent=currentQ<questions.length-1?'Next →':'See Results 🏆';
 }
-
 function startAutoNext(isLast) {
   let remaining=5;
   const nxt=document.getElementById('next-btn');
@@ -327,12 +332,8 @@ function startAutoNext(isLast) {
   nxt.textContent=`${baseLabel} (${remaining}s)`;
   autoNextTimer=setInterval(()=>{
     remaining--;
-    if(remaining<=0){
-      clearAutoNext();
-      nextQuestion();
-    } else {
-      nxt.textContent=`${baseLabel} (${remaining}s)`;
-    }
+    if(remaining<=0){ clearAutoNext(); nextQuestion(); }
+    else { nxt.textContent=`${baseLabel} (${remaining}s)`; }
   },1000);
 }
 
@@ -360,8 +361,7 @@ function checkAnswer(type,chosen,correct,btn) {
   updateAccuracy();
   const nxt=document.getElementById('next-btn');
   nxt.style.display='block';
-  const isLast=currentQ>=questions.length-1;
-  startAutoNext(isLast);
+  startAutoNext(currentQ>=questions.length-1);
 }
 
 function checkEvoAnswer(btn,evoQ,choseNone,chosenName) {
@@ -392,8 +392,7 @@ function checkEvoAnswer(btn,evoQ,choseNone,chosenName) {
   updateAccuracy();
   const nxt=document.getElementById('next-btn');
   nxt.style.display='block';
-  const isLast=currentQ>=questions.length-1;
-  startAutoNext(isLast);
+  startAutoNext(currentQ>=questions.length-1);
 }
 
 async function revealHint(level) {
@@ -440,6 +439,7 @@ function buildLearnGrid(list) {
     img.src=gifUrl(p.name); img.onerror=()=>{img.onerror=null;img.src=fallbackUrl(p.id);};
     const num=document.createElement('div'); num.className='lc-num'; num.textContent='#'+String(p.id).padStart(3,'0');
     const name=document.createElement('div'); name.className='lc-name'; name.textContent=displayName(p.name);
+    name.style.fontFamily="'Flexo', sans-serif";
     card.appendChild(img); card.appendChild(num); card.appendChild(name);
     grid.appendChild(card);
   });
@@ -473,7 +473,10 @@ async function openLearnDetail(pokemonId,fromBrowse=true) {
   sprite.onload=()=>{ spn.style.display='none'; sprite.style.opacity='1'; };
   sprite.onerror=()=>{ sprite.onerror=null; sprite.src=fallbackUrl(pokemonId); };
   sprite.src=gifUrl(p.name);
-  document.getElementById('learn-detail-name').textContent=displayName(p.name);
+  const nameEl=document.getElementById('learn-detail-name');
+  nameEl.textContent=displayName(p.name);
+  nameEl.style.fontFamily="'Flexo', sans-serif";
+  nameEl.style.webkitTextStroke='none';
   document.getElementById('learn-detail-num').textContent='#'+String(pokemonId).padStart(3,'0');
   const genus=specData.genera.find(g=>g.language.name==='en');
   document.getElementById('learn-category').textContent=genus?genus.genus:'—';
@@ -514,84 +517,74 @@ function playLearnAudio() {
     learnAudio.onended=()=>btn.classList.remove('playing');
   };
 }
+
 async function buildLearnEvoLine(pokemonId, specData) {
   const container=document.getElementById('learn-evo-line');
   container.innerHTML='<span style="font-size:12px;color:#aaa">Loading…</span>';
   try {
     const cr=await fetch(specData.evolution_chain.url);
     const cd=await cr.json();
-    // Flatten full chain into a simple list of gen1-only nodes
     function walkChain(node) {
       const p=allPokemon.find(x=>x.name===node.species.name);
       const children=node.evolves_to.flatMap(c=>walkChain(c));
-      if(p&&p.id<=151) return [{pokemon:p, evolvesTo: node.evolves_to.map(c=>{
-        const cp=allPokemon.find(x=>x.name===c.species.name);
-        return cp&&cp.id<=151?{pokemon:cp,evolvesTo:[]}:null;
-      }).filter(Boolean)}];
+      if(p&&p.id<=151){
+        return [{
+          pokemon:p,
+          evolvesTo:node.evolves_to.map(c=>{
+            const cp=allPokemon.find(x=>x.name===c.species.name);
+            // if direct child is non-gen1, pull up its gen1 children
+            if(!cp||cp.id>151){
+              return c.evolves_to.map(gc=>{
+                const gcp=allPokemon.find(x=>x.name===gc.species.name);
+                return gcp&&gcp.id<=151?{pokemon:gcp,evolvesTo:[]}:null;
+              }).filter(Boolean);
+            }
+            return [{pokemon:cp,evolvesTo:[]}];
+          }).flat().filter(Boolean)
+        }];
+      }
       return children;
     }
-    const nodes=walkChain(cd.chain);
-    container.innerHTML='';
-    if(nodes.length===0){
-      container.innerHTML='<span style="font-size:12px;color:#aaa">No evolution data.</span>';
-      return;
-    }
-    // Build a proper linear/branching chain from scratch
-    function buildChain(node, first=true) {
+    function buildChain(node,first=true) {
+      if(!node.pokemon){
+        node.evolvesTo.forEach(child=>buildChain(child,first));
+        return;
+      }
       if(!first){
         const arrow=document.createElement('div');
         arrow.className='learn-evo-arrow'; arrow.textContent='→';
         container.appendChild(arrow);
       }
-      const member=makeLearnEvoMember(node.pokemon, pokemonId);
+      const member=makeLearnEvoMember(node.pokemon,pokemonId);
       if(member) container.appendChild(member);
       if(node.evolvesTo.length===1){
-        buildChain(node.evolvesTo[0], false);
+        buildChain(node.evolvesTo[0],false);
       } else if(node.evolvesTo.length>1){
         const arrow=document.createElement('div');
         arrow.className='learn-evo-arrow'; arrow.textContent='→';
         container.appendChild(arrow);
         const branch=document.createElement('div'); branch.className='learn-evo-branch';
         node.evolvesTo.forEach(child=>{
-          const member2=makeLearnEvoMember(child.pokemon, pokemonId);
-          if(member2) branch.appendChild(member2);
+          if(child.pokemon&&child.pokemon.id<=151){
+            const m=makeLearnEvoMember(child.pokemon,pokemonId);
+            if(m) branch.appendChild(m);
+          }
         });
         container.appendChild(branch);
       }
     }
-    buildChain(nodes[0], true);
+    container.innerHTML='';
+    const nodes=walkChain(cd.chain);
+    if(!nodes.length){
+      container.innerHTML='<span style="font-size:12px;color:#aaa">No evolution data.</span>';
+      return;
+    }
+    buildChain(nodes[0],true);
   } catch(e) {
     container.innerHTML='<span style="font-size:12px;color:#aaa">Evolution data unavailable.</span>';
   }
 }
-function renderLearnEvoTree(container, node, currentId, isFirst=true) {
-  if(!isFirst) {
-    const arrow=document.createElement('div');
-    arrow.className='learn-evo-arrow';
-    arrow.textContent='→';
-    container.appendChild(arrow);
-  }
-  const member=makeLearnEvoMember(node.pokemon, currentId);
-  if(member) container.appendChild(member);
-  if(node.evolvesTo.length===0) return;
-  if(node.evolvesTo.length===1){
-    renderLearnEvoTree(container, node.evolvesTo[0], currentId, false);
-  } else {
-    const branch=document.createElement('div');
-    branch.className='learn-evo-branch';
-    node.evolvesTo.forEach(child=>{
-      const row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:6px;';
-      renderLearnEvoTree(row, child, currentId, false);
-      branch.appendChild(row);
-    });
-    const arrow=document.createElement('div');
-    arrow.className='learn-evo-arrow';
-    arrow.textContent='→';
-    container.appendChild(arrow);
-    container.appendChild(branch);
-  }
-}
+
 function makeLearnEvoMember(p,currentId) {
   if(!p) return null;
   const wrap=document.createElement('div');
@@ -599,7 +592,9 @@ function makeLearnEvoMember(p,currentId) {
   wrap.onclick=()=>{ if(p.id!==currentId) openLearnDetail(p.id,false); };
   const img=document.createElement('img');
   img.src=gifUrl(p.name); img.onerror=()=>{img.onerror=null;img.src=fallbackUrl(p.id);};
-  const name=document.createElement('div'); name.className='evo-mem-name'; name.textContent=displayName(p.name);
+  const name=document.createElement('div'); name.className='evo-mem-name';
+  name.style.fontFamily="'Flexo', sans-serif";
+  name.textContent=displayName(p.name);
   const num=document.createElement('div'); num.className='evo-mem-num'; num.textContent='#'+String(p.id).padStart(3,'0');
   wrap.appendChild(img); wrap.appendChild(name); wrap.appendChild(num);
   return wrap;
@@ -620,10 +615,8 @@ function preloadNext() {
 function updateAccuracy() {
   document.getElementById('accuracy-display').textContent=answeredCount===0?'—':Math.round(correctCount/answeredCount*100)+'%';
 }
-function nextQuestion()  {
-  playClick();
-  clearAutoNext();
-  currentQ++;
+function nextQuestion() {
+  playClick(); clearAutoNext(); currentQ++;
   if(currentQ<questions.length) renderQuestion(); else showResults();
 }
 function confirmReset()  { if(confirm('Reset the quiz? Your progress will be lost.')) restartGame(); }
