@@ -70,15 +70,34 @@ window.addEventListener('load', ()=>{
   logo.addEventListener('click', ()=>{
     logoTapCount++;
     if (logoTapTimer) clearTimeout(logoTapTimer);
-    logoTapTimer = setTimeout(()=>{ logoTapCount=0; }, 2000);
-    if (logoTapCount >= 10) {
+    logoTapTimer = setTimeout(()=>{ logoTapCount=0; }, 3000);
+
+    if (logoTapCount === 3) {
+      playHint();
+      showEasterEgg('📱',
+        'Searching for PokéStops',
+        "Your nearest PokéStop is 3 taps away… wait, that's not how this works."
+      );
+    } else if (logoTapCount === 5) {
+      playHint();
+      showEasterEgg('👊',
+        'Rookie Numbers.',
+        "5 taps. That's rookie numbers. A real Pokémon Master wouldn't quit now. 👊"
+      );
+    } else if (logoTapCount >= 10) {
       logoTapCount = 0;
       playSecretJingle();
       celebrationConfetti(100);
-      showEasterEgg('🎴','A Wild MaulishMaster Appeared!',
-        'You found the secret trainer! The creator says: "Thanks for playing — this was made with love. 💛"');
+      showEasterEgg('🏆',
+        'ACHIEVEMENT UNLOCKED: Obsessive Tapper',
+        'This whole game was made for people who notice the small things. You\'re one of them. Have some confetti. 🎉'
+      );
     }
   });
+
+  // ── Delay so overlay element is guaranteed ready ──────────────
+  setTimeout(checkNightMode, 500);
+});
 
   // ── Night Mode ───────────────────────────────────────────────
   checkNightMode();
@@ -86,13 +105,15 @@ window.addEventListener('load', ()=>{
 
 function checkNightMode() {
   const h = new Date().getHours();
-  if (h >= 23 || h < 3) {
+  if (h >= 23 || h < 4) {
+    const overlay = document.getElementById('easter-overlay');
+    if (!overlay) return;
     playNightChime();
     setTimeout(()=>{
       showEasterEgg('🌙','Shouldn\'t you be asleep, Trainer?',
         'It\'s late… but a true Pokémon Trainer never rests. Night mode activated. 🌟\n\nTake care of yourself — even Ash sleeps sometimes.');
       document.body.style.filter = 'brightness(0.88) saturate(0.85)';
-    }, 1200);
+    }, 500);
   }
 }
 
@@ -111,12 +132,42 @@ function closeEasterEgg() {
 
 // ── 3. Trainer Name Easter Eggs ──────────────────────────────────
 const TRAINER_EGGS = {
-  'ash':           { emoji:'🎯', title:'I wanna be the very best!',    body:'Like no one ever was! To catch them is your real test, to train them is your cause! Welcome, Ash.' },
-  'gary':          { emoji:'😏', title:'Smell ya later!',               body:'Difficulty auto-set to Hard. You asked for it, Gary.' },
-  'misty':         { emoji:'💧', title:'Togepiiiii!',                   body:'The Cerulean City Gym Leader is here! Water-type Pokémon will feel extra familiar.' },
-  'brock':         { emoji:'🍳', title:'Leave it to me!',               body:'The Pewter City Gym Leader has arrived. Jelly-filled donuts for everyone!' },
-  'maulishmaster': { emoji:'👑', title:'Welcome back, Creator!',        body:'The one who built all this is here. This whole game was made with love — for family. 💛' },
-  'missingno':     null // handled separately below
+   'ash': {
+      emoji: '🎯',
+      title: 'I wanna be the very best!',
+      body: 'Like no one ever was! To catch them is your real test, to train them is your cause! Welcome, Ash.'
+   },
+   'gary': {
+      emoji: '😏',
+      title: 'Smell ya later!',
+      body: 'Difficulty auto-set to Hard. You asked for it, Gary.'
+   },
+   'misty': {
+      emoji: '💧',
+      title: 'Togepiiiii!',
+      body: 'The Cerulean City Gym Leader is here! Water-type Pokémon will feel extra familiar.'
+   },
+   'brock': {
+      emoji: '🍳',
+      title: 'Leave it to me!',
+      body: 'The Pewter City Gym Leader has arrived. Jelly-filled donuts for everyone!'
+   },
+   'maulishmaster': {
+      emoji: '👑',
+      title: 'Welcome back, Creator!',
+      body: 'Ah, the creator! Probably should be sleeping right now. Instead, built an entire Pokémon quiz. For love. Worth it. 😎'
+   },
+   'the wifey': {
+      emoji: '💛',
+      title: 'The Most Important Trainer!',
+      body: "Yes, the quiz was literally built for you. No pressure. 😄❤️"
+   },
+   'helu': {
+      emoji: '🎮',
+      title: 'Player 2 Has Joined!',
+      body: "Before the quiz, before the code — there was you, a Game Boy, and way too many arguments about who got to play Pokémon Emerald 💚"
+   },
+   'missingno': null // handled separately below
 };
 
 function checkTrainerNameEgg(name) {
