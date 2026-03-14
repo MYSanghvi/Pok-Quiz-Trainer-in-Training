@@ -588,6 +588,8 @@ async function startGame() {
 
 async function renderQuestion() {
   clearAutoNext();
+  // ── Preload next 2 silently in background ─────────────────
+  preloadQuestionImages(currentQ + 1, 5);
   const q=questions[currentQ];
   hintsRevealed=0; currentPokemonData=null;
   document.getElementById('hint-cards').innerHTML='';
@@ -609,6 +611,20 @@ async function renderQuestion() {
     renderEvoQuestion(q.evoQ);
   }
 }
+
+function preloadQuestionImages(startIdx, count) {
+  const toLoad = questions.slice(startIdx, startIdx + count);
+  const promises = toLoad.map(q => new Promise(resolve => {
+    const img = new Image();
+    img.onload  = resolve;
+    img.onerror = resolve; // resolve even on error so we don't hang
+    img.src = gifUrl(q.correct.name);
+  }));
+  // Timeout after 4s so a slow connection never blocks the game
+  const timeout = new Promise(resolve => setTimeout(resolve, 4000));
+  return Promise.race([Promise.all(promises), timeout]);
+}
+
 
 function renderWhosQuestion(q) {
   const img=document.getElementById('pokemon-img'), spn=document.getElementById('spinner');
