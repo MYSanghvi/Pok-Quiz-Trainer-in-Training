@@ -58,51 +58,100 @@ let autoNextTimer=null;
 const QUICK_COUNT=20;
 
 // ════════════════════════════════════════════════════════════════
-// ── EASTER EGGS ─────────────────────────────────────────────────
+// ── EASTER EGGS
 // ════════════════════════════════════════════════════════════════
 
-// ── 1. Tap logo 10 times ─────────────────────────────────────────
+// ── Easter egg overlay helpers ───────────────────────────────────
+function showEasterEgg(emoji, title, body, img=null) {
+  const emojiEl = document.getElementById('easter-emoji');
+  if (img) {
+    emojiEl.innerHTML = `<img src="${img}" alt="" style="width:80px;height:80px;object-fit:contain;image-rendering:pixelated;"/>`;
+  } else {
+    emojiEl.innerHTML = emoji;
+  }
+  document.getElementById('easter-title').textContent = title;
+  document.getElementById('easter-body').textContent  = body;
+  document.getElementById('easter-overlay').style.display = 'flex';
+  vibrate([50,30,50,30,100]);
+}
+let onEasterEggClose = null;
+
+function closeEasterEgg() {
+  document.getElementById('easter-overlay').style.display = 'none';
+  if (onEasterEggClose) {
+    onEasterEggClose();
+    onEasterEggClose = null;
+  }
+}
+
+
+// ── Toast helper (non-blocking) ───────────────────────────────────
+function showToast(message) {
+  const existing = document.getElementById('easter-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'easter-toast';
+  toast.textContent = message;
+  toast.setAttribute('style',
+    'position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);' +
+    'background:rgba(0,58,112,0.92); color:#fff; padding:12px 22px;' +
+    'border-radius:12px; font-size:13px; font-family:sans-serif;' +
+    'z-index:9997; opacity:0; transition:opacity 0.3s ease, transform 0.3s ease;' +
+    'max-width:300px; text-align:center; line-height:1.5; pointer-events:none;'
+  );
+  document.body.appendChild(toast);
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+  });
+  setTimeout(()=>{
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(20px)';
+    setTimeout(()=> toast.remove(), 400);
+  }, 4000);
+}
+
+// ── 1. Logo tap milestones ────────────────────────────────────────
 let logoTapCount=0, logoTapTimer=null;
+
 window.addEventListener('load', ()=>{
   const logo = document.getElementById('landing-logo');
-  if (!logo) return;
-  logo.style.cursor = 'pointer';
-  logo.addEventListener('click', ()=>{
-    logoTapCount++;
-    if (logoTapTimer) clearTimeout(logoTapTimer);
-    logoTapTimer = setTimeout(()=>{ logoTapCount=0; }, 3000);
+  if (logo) {
+    logo.style.cursor = 'pointer';
+    logo.addEventListener('click', ()=>{
+      logoTapCount++;
+      if (logoTapTimer) clearTimeout(logoTapTimer);
+      logoTapTimer = setTimeout(()=>{ logoTapCount=0; }, 3000);
 
-    if (logoTapCount === 3) {
-      playHint();
-      showEasterEgg('📱',
-        'Searching for PokéStops',
-        "Your nearest PokéStop is 3 taps away… wait, that's not how this works."
-      );
-    } else if (logoTapCount === 5) {
-      playHint();
-      showEasterEgg('👊',
-        'Rookie Numbers.',
-        "5 taps. That's rookie numbers. A real Pokémon Master wouldn't quit now. 👊"
-      );
-    } else if (logoTapCount >= 10) {
-      logoTapCount = 0;
-      playSecretJingle();
-      celebrationConfetti(100);
-      showEasterEgg('🏆',
-        'ACHIEVEMENT UNLOCKED: Obsessive Tapper',
-        'This whole game was made for people who notice the small things. You\'re one of them. Have some confetti. 🎉'
-      );
-    }
-  });
+      if (logoTapCount === 3) {
+        playHint();
+        showToast("📱 Your nearest PokéStop is 3 taps away… wait, that's not how this works. Keep tapping.");
+      } else if (logoTapCount === 5) {
+        playHint();
+        showToast("👊 5 taps. That's rookie numbers. A real Pokémon Master wouldn't quit now.");
+      } else if (logoTapCount >= 10) {
+        logoTapCount = 0;
+        playSecretJingle();
+        celebrationConfetti(100);
+        showEasterEgg('🏆', 'Achievment Unlocked: \n\nObsessive Tapper',
+          "This whole game was made for people who notice the small things. You're one of them. 💛");
+      }
+    });
+  }
 
-  // ── Delay so overlay element is guaranteed ready ──────────────
+  if (!('ontouchstart' in window)) {
+    const hint = document.getElementById('swipe-hint');
+    if (hint) hint.classList.add('hidden');
+  }
+
   setTimeout(checkNightMode, 500);
 });
 
-  // ── Night Mode ───────────────────────────────────────────────
-  checkNightMode();
-});
 
+// ── 2. Night mode ────────────────────────────────────────────────
 function checkNightMode() {
   const h = new Date().getHours();
   if (h >= 23 || h < 4) {
@@ -110,64 +159,165 @@ function checkNightMode() {
     if (!overlay) return;
     playNightChime();
     setTimeout(()=>{
-      showEasterEgg('🌙','Shouldn\'t you be asleep, Trainer?',
-        'It\'s late… but a true Pokémon Trainer never rests. Night mode activated. 🌟\n\nTake care of yourself — even Ash sleeps sometimes.');
-      document.body.style.filter = 'brightness(0.88) saturate(0.85)';
+      showEasterEgg('🌙', "Shouldn't you be asleep, Trainer?",
+        "It's late… but a true Pokémon Trainer never rests. Night mode activated. 🌟\n\nTake care of yourself — even Ash sleeps sometimes.");
+
+      // Apply night mode visuals
+      document.body.style.background   = '#1a1a2e';
+      document.body.style.transition   = 'background 1.5s ease';
+      document.querySelector('.card').style.background  = '#16213e';
+      document.querySelector('.card').style.color       = '#e0e0e0';
+      document.querySelector('.card').style.transition  = 'background 1.5s ease, color 1.5s ease';
+      document.querySelector('.card').style.boxShadow   = '0 8px 32px rgba(0,0,0,0.6)';
+
+      // Star overlay on body
+      const stars = document.createElement('div');
+      stars.id = 'night-stars';
+      stars.setAttribute('style',
+        'position:fixed;inset:0;pointer-events:none;z-index:1;' +
+        'background:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E' +
+        '%3Ccircle cx=\'20\' cy=\'30\' r=\'1\' fill=\'white\' opacity=\'0.6\'/%3E' +
+        '%3Ccircle cx=\'80\' cy=\'10\' r=\'1.5\' fill=\'white\' opacity=\'0.4\'/%3E' +
+        '%3Ccircle cx=\'150\' cy=\'50\' r=\'1\' fill=\'white\' opacity=\'0.7\'/%3E' +
+        '%3Ccircle cx=\'40\' cy=\'80\' r=\'1\' fill=\'white\' opacity=\'0.3\'/%3E' +
+        '%3Ccircle cx=\'120\' cy=\'90\' r=\'1.5\' fill=\'white\' opacity=\'0.5\'/%3E' +
+        '%3Ccircle cx=\'170\' cy=\'20\' r=\'1\' fill=\'white\' opacity=\'0.6\'/%3E' +
+        '%3Ccircle cx=\'60\' cy=\'150\' r=\'1\' fill=\'white\' opacity=\'0.4\'/%3E' +
+        '%3Ccircle cx=\'190\' cy=\'140\' r=\'1.5\' fill=\'white\' opacity=\'0.5\'/%3E' +
+        '%3C/svg%3E") repeat;opacity:0;transition:opacity 2s ease;'
+      );
+      document.body.appendChild(stars);
+      setTimeout(()=>{ stars.style.opacity='1'; }, 100);
+
     }, 500);
   }
 }
 
-// ── Easter egg overlay helpers ───────────────────────────────────
-function showEasterEgg(emoji, title, body) {
-  document.getElementById('easter-emoji').textContent = emoji;
-  document.getElementById('easter-title').textContent = title;
-  document.getElementById('easter-body').textContent  = body;
-  const overlay = document.getElementById('easter-overlay');
-  overlay.style.display = 'flex';
-  vibrate([50,30,50,30,100]);
-}
-function closeEasterEgg() {
-  document.getElementById('easter-overlay').style.display = 'none';
-}
+// ── Text readability overrides ────────────────────────────────
+const style = document.createElement('style');
+style.id = 'night-mode-styles';
+style.textContent = `
+  body.night-mode, body.night-mode * {
+    --night-text: #e8e8e8;
+    --night-sub:  #aab4c8;
+    --night-blue: #7eb3f7;
+  }
 
-// ── 3. Trainer Name Easter Eggs ──────────────────────────────────
+  /* Headings */
+  #landing-screen h1,
+  #welcome-screen h1,
+  .qt-title,
+  .learn-detail-name,
+  #lb-title { color: #7eb3f7 !important; -webkit-text-stroke: 0 !important; }
+
+  /* Body text */
+  .qt-desc, .landing-subtitle, label,
+  .learn-info-label, .learn-dex-entry,
+  .learn-category, .lc-name,
+  .evo-mem-name, .result-msg,
+  .result-score-sub, .result-time,
+  .feedback-msg, .top-bar,
+  .page-footer, .page-footer *,
+  .lb-table td, .lb-table th { color: #aab4c8 !important; }
+  #learn-category { color: #e8e8e8 !important; }
+  .entry-text { color: #e8e8e8 !important; }
+
+
+  /* Primary blue elements → lighter blue */
+  .qt-title, #welcome-title,
+  .learn-detail-num, .lc-num,
+  .evo-mem-num { color: #7eb3f7 !important; }
+
+  /* Buttons */
+  .quiz-type-btn {
+    background: #1e2d4a !important;
+    border-color: #2e4a7a !important;
+  }
+  .quiz-type-btn:hover {
+    background: #2a3f6a !important;
+    border-color: #7eb3f7 !important;
+  }
+  .diff-btn, .toggle-btn, .learn-nav-btn, .learn-card {
+    background: #1e2d4a !important;
+    border-color: #2e4a7a !important;
+    color: #aab4c8 !important;
+  }
+  .diff-btn.selected, .toggle-btn.active {
+    background: #3D7DCA !important;
+    color: #fff !important;
+  }
+
+  /* Inputs */
+  input[type="text"] {
+    background: #1e2d4a !important;
+    border-color: #2e4a7a !important;
+    color: #e8e8e8 !important;
+  }
+  input[type="text"]::placeholder { color: #556a8a !important; }
+
+  /* Cards inside game */
+  .hint-card, .learn-info-card {
+    background: #1e2d4a !important;
+    border-color: #2e4a7a !important;
+    color: #aab4c8 !important;
+  }
+
+  /* Leaderboard */
+  .lb-table { background: transparent !important; }
+  .lb-table tr { background: #1e2d4a !important; }
+  .lb-table tr.lb-you { background: #2a3f6a !important; }
+  .lb-table th { background: #16213e !important; color: #7eb3f7 !important; }
+
+  /* Option buttons */
+  .opt-btn, .img-opt-btn, .evo-opt-btn {
+    background: #1e2d4a !important;
+    border-color: #2e4a7a !important;
+    color: #e8e8e8 !important;
+  }
+  .opt-btn.correct, .img-opt-btn.correct, .evo-opt-btn.correct {
+    background: #1a4a2a !important; border-color: #28a745 !important;
+  }
+  .opt-btn.wrong, .img-opt-btn.wrong, .evo-opt-btn.wrong {
+    background: #4a1a1a !important; border-color: #dc3545 !important;
+  }
+
+  /* Progress bar track */
+  .progress-wrap { background: #2e4a7a !important; }
+
+  /* Gen badge */
+  .gen-badge { background: #1e2d4a !important; border-color: #2e4a7a !important; color: #aab4c8 !important; }
+  .gen-badge.gen-active { background: #2a3f6a !important; border-color: #7eb3f7 !important; color: #7eb3f7 !important; }
+`;
+
+
+document.head.appendChild(style);
+document.body.classList.add('night-mode');
+
+
+// ── 3. Trainer name eggs ─────────────────────────────────────────
 const TRAINER_EGGS = {
-   'ash': {
-      emoji: '🎯',
-      title: 'I wanna be the very best!',
-      body: 'Like no one ever was! To catch them is your real test, to train them is your cause! Welcome, Ash.'
-   },
-   'gary': {
-      emoji: '😏',
-      title: 'Smell ya later!',
-      body: 'Difficulty auto-set to Hard. You asked for it, Gary.'
-   },
-   'misty': {
-      emoji: '💧',
-      title: 'Togepiiiii!',
-      body: 'The Cerulean City Gym Leader is here! Water-type Pokémon will feel extra familiar.'
-   },
-   'brock': {
-      emoji: '🍳',
-      title: 'Leave it to me!',
-      body: 'The Pewter City Gym Leader has arrived. Jelly-filled donuts for everyone!'
-   },
-   'maulishmaster': {
-      emoji: '👑',
-      title: 'Welcome back, Creator!',
-      body: 'Ah, the creator! Probably should be sleeping right now. Instead, built an entire Pokémon quiz. For love. Worth it. 😎'
-   },
-   'the wifey': {
-      emoji: '💛',
-      title: 'The Most Important Trainer!',
-      body: "Yes, the quiz was literally built for you. No pressure. 😄❤️"
-   },
-   'helu': {
-      emoji: '🎮',
-      title: 'Player 2 Has Joined!',
-      body: "Before the quiz, before the code — there was you, a Game Boy, and way too many arguments about who got to play Pokémon Emerald 💚"
-   },
-   'missingno': null // handled separately below
+  'ash':           { emoji:'🎯', img:'img/ash_img.png',
+                     title:'I wanna be the very best!',
+                     body:'Like no one ever was! To catch them is your real test, to train them is your cause! Welcome, Ash.' },
+  'gary':          { emoji:'😏', img:'img/gary_img.png',
+                     title:'Smell ya later!',
+                     body:'Difficulty auto-set to Hard. You asked for it, Gary.' },
+  'misty':         { emoji:'💧',  img:'img/misty_img.png',
+                     title:'Togepiiiii!',
+                     body:'The Cerulean City Gym Leader is here! Water-type Pokémon will feel extra familiar.' },
+  'brock':         { emoji:'🍳',  img:'img/brock_img.png',
+                     title:'Leave it to me!',
+                     body:'The Pewter City Gym Leader has arrived. Jelly-filled donuts for everyone!' },
+  'maulishmaster': { emoji:'👑',  img:'img/maulishmaster_img.png',
+                     title:'Welcome back, Creator!',
+                     body:'Ah, the creator! Probably should be sleeping right now. Instead, built an entire Pokémon quiz. For love. Worth it! 💛' },
+  'thewifey':      { emoji:'💛', img:'img/thewifey_img.png',
+                     title:'The Most Important Trainer!',
+                     body:'Yes, the quiz was literally built for you. No pressure. 😄💛' },
+  'helu':          { emoji:'🎮', img:'img/helu_img.png',
+                     title:'Player 2 Has Joined!',
+                     body:"Before the quiz, before the code, there was you, a GameBoy SP, and way too many arguments about who got to play Pokémon Emerald 💚" },
+  'missingno':     null
 };
 
 function checkTrainerNameEgg(name) {
@@ -185,13 +335,13 @@ function checkTrainerNameEgg(name) {
   if (TRAINER_EGGS[key]) {
     const egg = TRAINER_EGGS[key];
     playSecretJingle();
-    setTimeout(()=> showEasterEgg(egg.emoji, egg.title, egg.body), 300);
+    setTimeout(()=> showEasterEgg(egg.emoji, egg.title, egg.body, egg.img||null), 300);
     return true;
   }
   return false;
 }
 
-// ── 4. MISSINGNO easter egg ──────────────────────────────────────
+// ── 4. MissingNo glitch ──────────────────────────────────────────
 function triggerMissingNo() {
   playGlitchSound();
   vibrate([100,50,200,50,100]);
@@ -204,13 +354,13 @@ function triggerMissingNo() {
     if (flickers > 10) {
       clearInterval(glitch);
       card.style.filter = 'none';
-      showEasterEgg('👾','̴̢̛E̷R̵R̴O̸R̷: ̶M̸I̷S̶S̴I̵N̷G̸N̵O̴.',
+      showEasterEgg('👾', 'E̷R̵R̴O̸R̷: M̸I̷S̶S̴I̵N̷G̸N̵O̴.',
         'Oops… MissingNo. corrupted your save data!\n\n…Just kidding. Fixed it. 😅\n\nYour name has been accepted, glitch trainer.');
     }
   }, 120);
 }
 
-// ── 5. 100% Score — Mew appears ──────────────────────────────────
+// ── 5. 100% Mew easter egg ───────────────────────────────────────
 function triggerMewEasterEgg() {
   playMewChime();
   const mew = document.createElement('img');
@@ -223,22 +373,20 @@ function triggerMewEasterEgg() {
   `;
   document.body.appendChild(mew);
   requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      mew.style.bottom = '120px';
-    });
+    requestAnimationFrame(()=>{ mew.style.bottom = '120px'; });
   });
   setTimeout(()=>{ mew.style.opacity='0'; }, 3200);
   setTimeout(()=>{ mew.remove(); }, 4400);
   setTimeout(()=>{
-    showEasterEgg('✨','A Wild Mew Appeared!',
+    showEasterEgg('✨', 'A Wild Mew Appeared!',
       'You scored 100%! Only the rarest trainers ever see Mew.\n\nYou are one of them. 🌟');
   }, 1400);
 }
 
-// ── 6. Long-press sprite in Pokédex ──────────────────────────────
+// ── 6. Long-press sprite for cry ─────────────────────────────────
 let longPressTimer = null;
 function attachLongPress(imgEl, pokemonId) {
-  const start = ()=>{
+  const start  = ()=>{
     longPressTimer = setTimeout(()=>{
       longPressTimer = null;
       vibrate([30,20,30]);
@@ -247,7 +395,7 @@ function attachLongPress(imgEl, pokemonId) {
   };
   const cancel = ()=>{ if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } };
   imgEl.addEventListener('mousedown',  start);
-  imgEl.addEventListener('touchstart', start, {passive:true});
+  imgEl.addEventListener('touchstart', start,  {passive:true});
   imgEl.addEventListener('mouseup',    cancel);
   imgEl.addEventListener('mouseleave', cancel);
   imgEl.addEventListener('touchend',   cancel);
@@ -260,7 +408,7 @@ function playLearnCry(pokemonId) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ── INIT ─────────────────────────────────────────────────────────
+// ── INIT
 // ════════════════════════════════════════════════════════════════
 
 document.addEventListener('touchstart', ()=>getCtx(), {once:true, passive:true});
@@ -285,12 +433,6 @@ document.getElementById('learn-detail-screen').addEventListener('touchend',e=>{
     }
   }
 },{passive:true});
-window.addEventListener('load',()=>{
-  if(!('ontouchstart' in window)){
-    const hint=document.getElementById('swipe-hint');
-    if(hint) hint.classList.add('hidden');
-  }
-});
 
 // ── Navigation ───────────────────────────────────────────────────
 function goToWelcome(type) {
@@ -404,14 +546,9 @@ function buildEvoOptions(evoQ) {
 
 async function startGame() {
   getCtx(); stopWhosThatAudio();
-
-  // ── Check trainer name easter eggs before starting ────────────
   const rawName = document.getElementById('player-name').value.trim();
   const isEgg = checkTrainerNameEgg(rawName);
-
-  // Block MISSINGNO from starting — they must re-enter a real name
   if (rawName.toLowerCase().replace(/\s+/g,'') === 'missingno') return;
-
   playClick();
   playerName = rawName;
   document.getElementById('start-btn').disabled=true;
@@ -426,10 +563,26 @@ async function startGame() {
   document.getElementById('whos-section').style.display    =quizType==='whos'    ?'block':'none';
   document.getElementById('identify-section').style.display=quizType==='identify'?'block':'none';
   document.getElementById('evo-section').style.display     =quizType==='evo'     ?'block':'none';
-  startTimer();
   showScreen('game-screen');
   renderQuestion();
+
+  // ── Wait for easter egg overlay if one is about to appear ────
+  const isTrainerEgg = TRAINER_EGGS[rawName.toLowerCase().replace(/\s+/g,'')] != null;
+  if (isTrainerEgg) {
+    // Egg shows after 300ms delay — check after 350ms to be safe
+    setTimeout(()=>{
+      const overlay = document.getElementById('easter-overlay');
+      if (overlay.style.display === 'flex') {
+        onEasterEggClose = ()=> startTimer();
+      } else {
+        startTimer();
+      }
+    }, 350);
+  } else {
+    startTimer();
+  }
 }
+
 
 async function renderQuestion() {
   clearAutoNext();
@@ -654,8 +807,8 @@ function buildLearnGrid(list) {
     card.onclick=()=>openLearnDetail(p.id);
     const img=document.createElement('img');
     img.src=gifUrl(p.name); img.onerror=()=>{img.onerror=null;img.src=fallbackUrl(p.id);};
-    img.style.cursor = 'pointer';
-    attachLongPress(img, p.id);  // ── Easter egg: long press for cry
+    img.style.cursor='pointer';
+    attachLongPress(img, p.id);
     const num=document.createElement('div'); num.className='lc-num'; num.textContent='#'+String(p.id).padStart(3,'0');
     const name=document.createElement('div'); name.className='lc-name';
     name.style.fontFamily="'Flexo', sans-serif";
@@ -693,7 +846,7 @@ async function openLearnDetail(pokemonId,fromBrowse=true) {
   sprite.onload=()=>{ spn.style.display='none'; sprite.style.opacity='1'; };
   sprite.onerror=()=>{ sprite.onerror=null; sprite.src=fallbackUrl(pokemonId); };
   sprite.src=gifUrl(p.name);
-  attachLongPress(sprite, pokemonId); // ── Easter egg: long press on detail sprite too
+  attachLongPress(sprite, pokemonId);
   const nameEl=document.getElementById('learn-detail-name');
   nameEl.textContent=displayName(p.name);
   nameEl.style.fontFamily="'Flexo', sans-serif";
@@ -838,32 +991,4 @@ function celebrationConfetti(pct) {
       origin:{x:fired%2===0?0.1:0.9,y:0.6}, colors:['#FFCB05','#3D7DCA','#003A70','#ffffff','#ffee88'] });
     if(++fired>=rounds*2) clearInterval(iv);
   },340);
-}
-
-// ── Results & timer (stubs expected from leaderboard.js) ─────────
-function showResults() {
-  stopTimer();
-  const total=questions.length, pct=Math.round(correctCount/total*100);
-  document.getElementById('result-player-name').textContent=playerName;
-  document.getElementById('result-pct').textContent=pct+'%';
-  document.getElementById('result-score-sub').textContent=`${correctCount} / ${total} correct`;
-  document.getElementById('result-time').textContent=`Time: ${document.getElementById('timer-display').textContent}`;
-  const msgs=[
-    [100,'✨ PERFECT SCORE! Legendary Trainer! ✨'],
-    [80,'🏆 Amazing! You\'re a Pokémon Master!'],
-    [60,'⭐ Great work, Trainer!'],
-    [40,'💪 Good effort! Keep training!'],
-    [0,'🌱 Every trainer starts somewhere!']
-  ];
-  const [,msg]=msgs.find(([t])=>pct>=t);
-  document.getElementById('result-msg').textContent=msg;
-  document.getElementById('result-emoji').textContent=pct===100?'🏆':pct>=80?'⭐':pct>=60?'😊':pct>=40?'💪':'🌱';
-  playFanfare();
-  celebrationConfetti(pct);
-
-  // ── 100% Mew easter egg ───────────────────────────────────────
-  if (pct === 100) setTimeout(triggerMewEasterEgg, 800);
-
-  showScreen('result-screen');
-  if(typeof submitScore==='function') submitScore(playerName, pct, correctCount, total, quizType, difficulty, quizMode);
 }
