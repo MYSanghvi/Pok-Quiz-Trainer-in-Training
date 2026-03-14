@@ -1,6 +1,6 @@
-# Pokemon Quiz - Trainer In Training ⚡
+# PokeMommy - Gotta train 'em all ⚡
 
-A small Pokémon quiz where you guess the Pokémon from its image or silhouette.
+A full-featured Pokémon quiz app covering all 151 Generation 1 Pokémon (for now).
 
 Originally created to train my expecting wife so that when our future little Pokémon Trainer arrives, the Pokédex knowledge in this house is already strong.
 
@@ -12,17 +12,40 @@ Our future baby will eventually learn Pokémon, so this quiz is the first step i
 
 No pressure, wifey.
 
-## How it works
+## Modes
 
-You see a Pokémon image or silhouette and try to guess which Pokémon it is. Use the hints if you're stuck, trainer.
+### Pokédex
+Browse all 151 Generation 1 Pokémon. See their type, category, Pokédex entry, and full evolution line. Tap the speaker to hear the name pronounced.
+
+### Identify the Pokémon
+A Pokémon's name is shown. Pick the correct image from 4 choices. On Hard mode, all images are silhouettes.
+
+### Spot the Evolution
+A Pokémon is shown. Pick what it evolves into — or what it evolved from — from 4 image choices. But remember, some Pokémon don't evolve. On Hard mode, the sprite is a silhouette.
+
+### Who's That Pokémon?
+A Pokémon sprite is shown. Pick the correct name from 4 choices. On Hard mode, the sprite is a silhouette.
+
+## Features
+
+- **Quick Test** — 20 random Pokémon per session
+- **Full Pokédex** — all 151 in one run
+- **Easy / Hard difficulty** — clear images vs. silhouettes
+- **3-tier hint system** — Category → Type → Pokédex Entry
+- **Auto-advance** — next question loads after 5 seconds
+- **Leaderboard** — scores saved and ranked by accuracy and time
+- **Sound & vibration** — audio feedback for correct, wrong, hints, and results
+- **Mobile-friendly** — swipe to navigate the Pokédex on touch devices
+
+## Easter Eggs
+
+There are 6 hidden easter eggs in the game. Finding them all is part of the journey.
 
 ## Credits
 
 Created by a fellow Pokémon Trainer starting a new journey.
-
-Pokémon sprites by TilableToast / FurretTurret. (https://github.com/Nackha1/Hd-sprites)
-
 Made for my expecting wife and our future little Pokémon Trainer.
+Pokémon sprites by TilableToast / FurretTurret. (https://github.com/Nackha1/Hd-sprites)
 
 ## Disclaimer
 
