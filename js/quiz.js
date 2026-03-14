@@ -563,7 +563,9 @@ async function startGame() {
   document.getElementById('whos-section').style.display    =quizType==='whos'    ?'block':'none';
   document.getElementById('identify-section').style.display=quizType==='identify'?'block':'none';
   document.getElementById('evo-section').style.display     =quizType==='evo'     ?'block':'none';
+// ── Preload first 3 images before showing game ────────────────
   showScreen('game-screen');
+  await preloadQuestionImages(0, 3);
   renderQuestion();
 
   // ── Wait for easter egg overlay if one is about to appear ────
